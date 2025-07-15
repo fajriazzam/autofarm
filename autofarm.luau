@@ -1,174 +1,117 @@
-getgenv().AutoFarm = true
+-- Simple Hub UI - KRNL Friendly
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local plr = game:GetService("Players").LocalPlayer
+local cg = game:GetService("CoreGui")
 
-local lplr = Players.LocalPlayer
-local remote = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("SummerHarvestRemoteEvent")
+local gui = Instance.new("ScreenGui")
+gui.Name = "CustomHub"
+gui.Parent = cg
+gui.ResetOnSpawn = false
 
-local function getHumanoidRootPart()
-    local char = lplr.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        return char.HumanoidRootPart
-    end
-    return nil
+-- Main container
+local mainFrame = Instance.new("Frame", gui)
+mainFrame.Size = UDim2.new(0, 500, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.Active = true
+mainFrame.Draggable = true
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
+
+-- Sidebar
+local sidebar = Instance.new("Frame", mainFrame)
+sidebar.Size = UDim2.new(0, 120, 1, 0)
+sidebar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 8)
+
+local sideList = Instance.new("UIListLayout", sidebar)
+sideList.Padding = UDim.new(0, 5)
+sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+sideList.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Content area
+local content = Instance.new("Frame", mainFrame)
+content.Position = UDim2.new(0, 120, 0, 0)
+content.Size = UDim2.new(1, -120, 1, 0)
+content.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Instance.new("UICorner", content).CornerRadius = UDim.new(0, 8)
+
+-- Title
+local title = Instance.new("TextLabel", sidebar)
+title.Size = UDim2.new(1, -10, 0, 30)
+title.Text = "Speed Hub X"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.BackgroundTransparency = 1
+
+-- Sidebar buttons
+local tabs = {"Main", "Automatically", "Inventory", "Shop", "Misc", "Settings"}
+
+local buttons = {}
+
+for _, name in ipairs(tabs) do
+    local b = Instance.new("TextButton", sidebar)
+    b.Size = UDim2.new(1, -10, 0, 30)
+    b.Text = name
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.Gotham
+    b.TextScaled = true
+    b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    table.insert(buttons, b)
 end
 
-local function teleportTo(position)
-    local hrp = getHumanoidRootPart()
-    if hrp then
-        hrp.CFrame = CFrame.new(position)
+-- Example: Content buttons for "Main"
+local function loadMainPage()
+    content:ClearAllChildren()
+
+    local layout = Instance.new("UIListLayout", content)
+    layout.Padding = UDim.new(0, 5)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+    local options = {
+        "Automation Plants",
+        "Automation Collection",
+        "Automation Sprinkler",
+        "Automation Eggs",
+        "Automation Sell"
+    }
+
+    for _, text in ipairs(options) do
+        local btn = Instance.new("TextButton", content)
+        btn.Size = UDim2.new(0, 250, 0, 35)
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.Gotham
+        btn.TextScaled = true
+        btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+        btn.MouseButton1Click:Connect(function()
+            print(text .. " clicked!")
+            -- Ganti ini dengan action script kamu!
+        end)
     end
 end
 
-local function spamEUntilFruitGone(fruit)
-    if not fruit or not fruit.PrimaryPart then
-        return
-    end
-
-    local fruitExists = true
-    local conn
-
-    conn = fruit.AncestryChanged:Connect(function(_, parent)
-        if not parent then
-            fruitExists = false
-            conn:Disconnect()
+-- Link sidebar to content
+for _, b in ipairs(buttons) do
+    b.MouseButton1Click:Connect(function()
+        if b.Text == "Main" then
+            loadMainPage()
+        else
+            content:ClearAllChildren()
+            local lbl = Instance.new("TextLabel", content)
+            lbl.Size = UDim2.new(1, 0, 1, 0)
+            lbl.Text = b.Text .. " page"
+            lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+            lbl.Font = Enum.Font.GothamBold
+            lbl.TextScaled = true
+            lbl.BackgroundTransparency = 1
         end
     end)
-
-    while fruitExists and getgenv().AutoFarm do
-        local ok, err = pcall(function()
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-            wait(0.05)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-        end)
-
-        if not ok then
-            warn("Error when spamming E key: " .. tostring(err))
-            break
-        end
-
-        wait(0.2)
-    end
 end
 
-local function getOwnedFarms()
-    local farms = {}
-    local FarmObjects = workspace:WaitForChild("Farm"):GetChildren()
-
-    for _, farm in ipairs(FarmObjects) do
-        local success, isOwned = pcall(function()
-            return farm.Important.Data.Owner.Value == lplr.Name
-        end)
-
-        if success and isOwned then
-            table.insert(farms, farm)
-        end
-    end
-
-    return farms
-end
-
-local function getPlantsFromFarm(farm)
-    local plants = {}
-    local plantsFolder = farm.Important:FindFirstChild("Plants_Physical")
-
-    if plantsFolder then
-        for _, plant in ipairs(plantsFolder:GetChildren()) do
-            if plant:IsA("Model") then
-                table.insert(plants, plant)
-            end
-        end
-    end
-
-    return plants
-end
-
-local function getFruitsFromPlant(plant)
-    local fruits = {}
-    local fruitsFolder = plant:FindFirstChild("Fruits")
-
-    if fruitsFolder then
-        for _, fruit in ipairs(fruitsFolder:GetChildren()) do
-            if fruit:IsA("Model") and fruit.PrimaryPart then
-                table.insert(fruits, fruit)
-            end
-        end
-    end
-
-    return fruits
-end
-
-local function isWithinFirstTenMinutes()
-    local time = os.date("*t")
-    return time.min >= 0 and time.min < 10
-end
-
-local function pauseFunction()
-    local hrp = getHumanoidRootPart()
-    if hrp then
-        hrp.CFrame = CFrame.new(
-            -116.40152, 4.40001249, -12.4976292,
-            0.871914983, 0, 0.489657342,
-            0, 1, 0,
-            -0.489657342, 0, 0.871914983
-        )
-    end
-    remote:FireServer("SubmitAllPlants")
-end
-
-task.spawn(function()
-    while true do
-        getgenv().sh = isWithinFirstTenMinutes()
-        wait(5)
-    end
-end)
-
-task.spawn(function()
-    while true do
-        if getgenv().AutoFarm and getgenv().sh then
-            local hrp = getHumanoidRootPart()
-
-            if not hrp then
-                wait(3)
-            else
-                local farms = getOwnedFarms()
-
-                if #farms == 0 then
-                    wait(5)
-                else
-                    for _, farm in ipairs(farms) do
-                        local plants = getPlantsFromFarm(farm)
-
-                        for _, plant in ipairs(plants) do
-                            local fruits = getFruitsFromPlant(plant)
-
-                            for _, fruit in ipairs(fruits) do
-                                if not getgenv().AutoFarm or not getgenv().sh then break end
-
-                                if fruit and fruit.Name == "Tomato" and fruit.PrimaryPart then
-                                    teleportTo(fruit.PrimaryPart.Position)
-                                    wait(0.1)
-                                    spamEUntilFruitGone(fruit)
-                                end
-                            end
-
-                            if not getgenv().AutoFarm or not getgenv().sh then break end
-                        end
-                    end
-                end
-            end
-
-            wait(25)
-
-            for i = 1, 5 do
-                if not getgenv().AutoFarm then break end
-                pauseFunction()
-                wait(1)
-            end
-        else
-            wait(1)
-        end
-    end
-end)
+-- Load default
+loadMainPage()
