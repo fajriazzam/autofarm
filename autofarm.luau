@@ -30,7 +30,28 @@ local mainFrame = create("Frame", {
 }, gui)
 roundify(mainFrame, 12)
 
--- Top-right control buttons
+-- Sidebar
+local sidebar = create("Frame", {
+    Size = UDim2.new(0, 110, 1, 0),
+    BackgroundColor3 = Color3.fromRGB(28, 29, 34)
+}, mainFrame)
+roundify(sidebar, 10)
+
+create("UIListLayout", {
+    Padding = UDim.new(0, 6),
+    HorizontalAlignment = Enum.HorizontalAlignment.Center,
+    SortOrder = Enum.SortOrder.LayoutOrder
+}, sidebar)
+
+-- Content area
+local content = create("Frame", {
+    Position = UDim2.new(0, 110, 0, 0),
+    Size = UDim2.new(1, -110, 1, 0),
+    BackgroundColor3 = Color3.fromRGB(44, 45, 50)
+}, mainFrame)
+roundify(content, 10)
+
+-- Top-right control buttons (must be after sidebar/content so variables exist)
 local controlBar = create("Frame", {
     Size = UDim2.new(0, 60, 0, 28),
     Position = UDim2.new(1, -68, 0, 8),
@@ -68,25 +89,6 @@ end)
 closeBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
-
-local sidebar = create("Frame", {
-    Size = UDim2.new(0, 110, 1, 0),
-    BackgroundColor3 = Color3.fromRGB(28, 29, 34)
-}, mainFrame)
-roundify(sidebar, 10)
-
-create("UIListLayout", {
-    Padding = UDim.new(0, 6),
-    HorizontalAlignment = Enum.HorizontalAlignment.Center,
-    SortOrder = Enum.SortOrder.LayoutOrder
-}, sidebar)
-
-local content = create("Frame", {
-    Position = UDim2.new(0, 110, 0, 0),
-    Size = UDim2.new(1, -110, 1, 0),
-    BackgroundColor3 = Color3.fromRGB(44, 45, 50)
-}, mainFrame)
-roundify(content, 10)
 
 -- Sidebar Title
 create("TextLabel", {
