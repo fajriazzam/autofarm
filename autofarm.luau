@@ -1,0 +1,174 @@
+getgenv().AutoFarm = true
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local lplr = Players.LocalPlayer
+local remote = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("SummerHarvestRemoteEvent")
+
+local function getHumanoidRootPart()
+    local char = lplr.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        return char.HumanoidRootPart
+    end
+    return nil
+end
+
+local function teleportTo(position)
+    local hrp = getHumanoidRootPart()
+    if hrp then
+        hrp.CFrame = CFrame.new(position)
+    end
+end
+
+local function spamEUntilFruitGone(fruit)
+    if not fruit or not fruit.PrimaryPart then
+        return
+    end
+
+    local fruitExists = true
+    local conn
+
+    conn = fruit.AncestryChanged:Connect(function(_, parent)
+        if not parent then
+            fruitExists = false
+            conn:Disconnect()
+        end
+    end)
+
+    while fruitExists and getgenv().AutoFarm do
+        local ok, err = pcall(function()
+            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+            wait(0.05)
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+        end)
+
+        if not ok then
+            warn("Error when spamming E key: " .. tostring(err))
+            break
+        end
+
+        wait(0.2)
+    end
+end
+
+local function getOwnedFarms()
+    local farms = {}
+    local FarmObjects = workspace:WaitForChild("Farm"):GetChildren()
+
+    for _, farm in ipairs(FarmObjects) do
+        local success, isOwned = pcall(function()
+            return farm.Important.Data.Owner.Value == lplr.Name
+        end)
+
+        if success and isOwned then
+            table.insert(farms, farm)
+        end
+    end
+
+    return farms
+end
+
+local function getPlantsFromFarm(farm)
+    local plants = {}
+    local plantsFolder = farm.Important:FindFirstChild("Plants_Physical")
+
+    if plantsFolder then
+        for _, plant in ipairs(plantsFolder:GetChildren()) do
+            if plant:IsA("Model") then
+                table.insert(plants, plant)
+            end
+        end
+    end
+
+    return plants
+end
+
+local function getFruitsFromPlant(plant)
+    local fruits = {}
+    local fruitsFolder = plant:FindFirstChild("Fruits")
+
+    if fruitsFolder then
+        for _, fruit in ipairs(fruitsFolder:GetChildren()) do
+            if fruit:IsA("Model") and fruit.PrimaryPart then
+                table.insert(fruits, fruit)
+            end
+        end
+    end
+
+    return fruits
+end
+
+local function isWithinFirstTenMinutes()
+    local time = os.date("*t")
+    return time.min >= 0 and time.min < 10
+end
+
+local function pauseFunction()
+    local hrp = getHumanoidRootPart()
+    if hrp then
+        hrp.CFrame = CFrame.new(
+            -116.40152, 4.40001249, -12.4976292,
+            0.871914983, 0, 0.489657342,
+            0, 1, 0,
+            -0.489657342, 0, 0.871914983
+        )
+    end
+    remote:FireServer("SubmitAllPlants")
+end
+
+task.spawn(function()
+    while true do
+        getgenv().sh = isWithinFirstTenMinutes()
+        wait(5)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if getgenv().AutoFarm and getgenv().sh then
+            local hrp = getHumanoidRootPart()
+
+            if not hrp then
+                wait(3)
+            else
+                local farms = getOwnedFarms()
+
+                if #farms == 0 then
+                    wait(5)
+                else
+                    for _, farm in ipairs(farms) do
+                        local plants = getPlantsFromFarm(farm)
+
+                        for _, plant in ipairs(plants) do
+                            local fruits = getFruitsFromPlant(plant)
+
+                            for _, fruit in ipairs(fruits) do
+                                if not getgenv().AutoFarm or not getgenv().sh then break end
+
+                                if fruit and fruit.Name == "Tomato" and fruit.PrimaryPart then
+                                    teleportTo(fruit.PrimaryPart.Position)
+                                    wait(0.1)
+                                    spamEUntilFruitGone(fruit)
+                                end
+                            end
+
+                            if not getgenv().AutoFarm or not getgenv().sh then break end
+                        end
+                    end
+                end
+            end
+
+            wait(25)
+
+            for i = 1, 5 do
+                if not getgenv().AutoFarm then break end
+                pauseFunction()
+                wait(1)
+            end
+        else
+            wait(1)
+        end
+    end
+end)
