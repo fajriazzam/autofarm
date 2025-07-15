@@ -30,6 +30,45 @@ local mainFrame = create("Frame", {
 }, gui)
 roundify(mainFrame, 12)
 
+-- Top-right control buttons
+local controlBar = create("Frame", {
+    Size = UDim2.new(0, 60, 0, 28),
+    Position = UDim2.new(1, -68, 0, 8),
+    BackgroundTransparency = 1
+}, mainFrame)
+
+local function makeControlButton(txt, color)
+    local btn = create("TextButton", {
+        Size = UDim2.new(0, 24, 0, 24),
+        BackgroundColor3 = Color3.fromRGB(60, 60, 70),
+        Text = txt,
+        TextColor3 = color or Color3.fromRGB(255,255,255),
+        Font = Enum.Font.GothamBold,
+        TextScaled = true,
+        AutoButtonColor = true,
+        BorderSizePixel = 0
+    }, controlBar)
+    roundify(btn, 6)
+    return btn
+end
+
+local minimizeBtn = makeControlButton("-", Color3.fromRGB(255, 220, 80))
+minimizeBtn.Position = UDim2.new(0, 0, 0, 0)
+
+local closeBtn = makeControlButton("×", Color3.fromRGB(255, 80, 80))
+closeBtn.Position = UDim2.new(0, 32, 0, 0)
+
+local minimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    sidebar.Visible = not minimized
+    content.Visible = not minimized
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
 local sidebar = create("Frame", {
     Size = UDim2.new(0, 110, 1, 0),
     BackgroundColor3 = Color3.fromRGB(28, 29, 34)
