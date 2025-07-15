@@ -1,75 +1,100 @@
--- Simple Hub UI - KRNL Friendly
+-- Modern Simple Hub UI
 
-local plr = game:GetService("Players").LocalPlayer
-local cg = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "CustomHub"
-gui.Parent = cg
-gui.ResetOnSpawn = false
-
--- Main container
-local mainFrame = Instance.new("Frame", gui)
-mainFrame.Size = UDim2.new(0, 500, 0, 300)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
-mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-mainFrame.Active = true
-mainFrame.Draggable = true
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
-
--- Sidebar
-local sidebar = Instance.new("Frame", mainFrame)
-sidebar.Size = UDim2.new(0, 120, 1, 0)
-sidebar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 8)
-
-local sideList = Instance.new("UIListLayout", sidebar)
-sideList.Padding = UDim.new(0, 5)
-sideList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-sideList.SortOrder = Enum.SortOrder.LayoutOrder
-
--- Content area
-local content = Instance.new("Frame", mainFrame)
-content.Position = UDim2.new(0, 120, 0, 0)
-content.Size = UDim2.new(1, -120, 1, 0)
-content.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-Instance.new("UICorner", content).CornerRadius = UDim.new(0, 8)
-
--- Title
-local title = Instance.new("TextLabel", sidebar)
-title.Size = UDim2.new(1, -10, 0, 30)
-title.Text = "Speed Hub X"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBold
-title.TextScaled = true
-title.BackgroundTransparency = 1
-
--- Sidebar buttons
-local tabs = {"Main", "Automatically", "Inventory", "Shop", "Misc", "Settings"}
-
-local buttons = {}
-
-for _, name in ipairs(tabs) do
-    local b = Instance.new("TextButton", sidebar)
-    b.Size = UDim2.new(1, -10, 0, 30)
-    b.Text = name
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.Gotham
-    b.TextScaled = true
-    b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-    table.insert(buttons, b)
+-- Utility functions
+local function create(instanceType, props, parent)
+    local obj = Instance.new(instanceType)
+    for k, v in pairs(props or {}) do
+        obj[k] = v
+    end
+    if parent then obj.Parent = parent end
+    return obj
 end
 
--- Example: Content buttons for "Main"
+local function roundify(obj, radius)
+    create("UICorner", {CornerRadius = UDim.new(0, radius or 8)}, obj)
+end
+
+-- Main GUI
+local gui = create("ScreenGui", {Name = "CustomHub", ResetOnSpawn = false}, CoreGui)
+
+local mainFrame = create("Frame", {
+    Size = UDim2.new(0, 480, 0, 260),
+    Position = UDim2.new(0.5, -240, 0.5, -130),
+    BackgroundColor3 = Color3.fromRGB(36, 37, 42),
+    Active = true,
+    Draggable = true
+}, gui)
+roundify(mainFrame, 12)
+
+local sidebar = create("Frame", {
+    Size = UDim2.new(0, 110, 1, 0),
+    BackgroundColor3 = Color3.fromRGB(28, 29, 34)
+}, mainFrame)
+roundify(sidebar, 10)
+
+create("UIListLayout", {
+    Padding = UDim.new(0, 6),
+    HorizontalAlignment = Enum.HorizontalAlignment.Center,
+    SortOrder = Enum.SortOrder.LayoutOrder
+}, sidebar)
+
+local content = create("Frame", {
+    Position = UDim2.new(0, 110, 0, 0),
+    Size = UDim2.new(1, -110, 1, 0),
+    BackgroundColor3 = Color3.fromRGB(44, 45, 50)
+}, mainFrame)
+roundify(content, 10)
+
+-- Sidebar Title
+create("TextLabel", {
+    Size = UDim2.new(1, -12, 0, 32),
+    Text = "Speed Hub X",
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    Font = Enum.Font.GothamBold,
+    TextScaled = true,
+    BackgroundTransparency = 1
+}, sidebar)
+
+-- Sidebar Tabs
+local tabs = {"Main", "Automatically", "Inventory", "Shop", "Misc", "Settings"}
+local buttons = {}
+
+local function makeSidebarButton(name)
+    local btn = create("TextButton", {
+        Size = UDim2.new(1, -12, 0, 28),
+        Text = name,
+        TextColor3 = Color3.fromRGB(230, 230, 230),
+        Font = Enum.Font.Gotham,
+        TextScaled = true,
+        BackgroundColor3 = Color3.fromRGB(60, 60, 70),
+        AutoButtonColor = true
+    }, sidebar)
+    roundify(btn, 7)
+    return btn
+end
+
+for _, name in ipairs(tabs) do
+    table.insert(buttons, makeSidebarButton(name))
+end
+
+-- Content Pages
+local function clearContent()
+    for _, v in ipairs(content:GetChildren()) do
+        if not v:IsA("UICorner") then v:Destroy() end
+    end
+end
+
 local function loadMainPage()
-    content:ClearAllChildren()
-
-    local layout = Instance.new("UIListLayout", content)
-    layout.Padding = UDim.new(0, 5)
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    layout.VerticalAlignment = Enum.VerticalAlignment.Top
-
+    clearContent()
+    create("UIListLayout", {
+        Padding = UDim.new(0, 7),
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        VerticalAlignment = Enum.VerticalAlignment.Top
+    }, content)
     local options = {
         "Automation Plants",
         "Automation Collection",
@@ -77,41 +102,51 @@ local function loadMainPage()
         "Automation Eggs",
         "Automation Sell"
     }
-
     for _, text in ipairs(options) do
-        local btn = Instance.new("TextButton", content)
-        btn.Size = UDim2.new(0, 250, 0, 35)
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.Font = Enum.Font.Gotham
-        btn.TextScaled = true
-        btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
+        local btn = create("TextButton", {
+            Size = UDim2.new(0, 220, 0, 32),
+            Text = text,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Font = Enum.Font.Gotham,
+            TextScaled = true,
+            BackgroundColor3 = Color3.fromRGB(70, 70, 80),
+            AutoButtonColor = true
+        }, content)
+        roundify(btn, 7)
         btn.MouseButton1Click:Connect(function()
             print(text .. " clicked!")
-            -- Ganti ini dengan action script kamu!
+            -- Replace with your action script
         end)
     end
 end
 
--- Link sidebar to content
-for _, b in ipairs(buttons) do
+local function loadSimplePage(name)
+    clearContent()
+    create("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = name .. " page",
+        TextColor3 = Color3.fromRGB(220, 220, 220),
+        Font = Enum.Font.GothamBold,
+        TextScaled = true,
+        BackgroundTransparency = 1
+    }, content)
+end
+
+-- Sidebar Button Events
+for i, b in ipairs(buttons) do
     b.MouseButton1Click:Connect(function()
+        for _, btn in ipairs(buttons) do
+            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+        end
+        b.BackgroundColor3 = Color3.fromRGB(90, 90, 120)
         if b.Text == "Main" then
             loadMainPage()
         else
-            content:ClearAllChildren()
-            local lbl = Instance.new("TextLabel", content)
-            lbl.Size = UDim2.new(1, 0, 1, 0)
-            lbl.Text = b.Text .. " page"
-            lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-            lbl.Font = Enum.Font.GothamBold
-            lbl.TextScaled = true
-            lbl.BackgroundTransparency = 1
+            loadSimplePage(b.Text)
         end
     end)
 end
 
--- Load default
+-- Load default page
+buttons[1].BackgroundColor3 = Color3.fromRGB(90, 90, 120)
 loadMainPage()
